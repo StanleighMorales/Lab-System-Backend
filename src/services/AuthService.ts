@@ -2,10 +2,12 @@ import type { Context } from 'hono'
 import bcrypt from 'bcryptjs'
 import { eq } from 'drizzle-orm'
 import { createDb } from '@/db'
-import { users, sessions } from '@/db/schema'
+import { users, sessions, passwordResetTokens } from '@/db/schema'
 import { sign } from 'hono/jwt'
 import { nanoid } from 'nanoid'
 import type { AppBindings } from '@/lib/types/app-types'
+import { createHash, randomBytes } from 'crypto'
+import { MailerService } from './MailerService'
 
 /**
  * AuthService
@@ -101,6 +103,36 @@ export class AuthService {
   async invalidateRefreshSession(refreshToken: string) {
     await this.db.delete(sessions).where(eq(sessions.refreshToken, refreshToken))
   }
+
+  async requestResetPassword(email: string) {
+    const user = await this.db.query.users.findFirst({
+      where: eq(users.email, email),
+    })
+
+    if(!user){
+      this.c.var.logger.info(`Password reset requested for non-existing user: ${email}`)
+      return
+    }
+    const token = randomBytes(32).toString('hex')
+
+    const tokenHash = createHash('sha256').update(token).digest('hex')
+
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000) // 30 minutes
+
+
+    await this.db.insert(passwordResetTokens).values({
+      userId: user.id,
+      tokenHash,
+      expiresAt,
+    })
+
+    const mailer = await MailerService.create(this.c.env)
+    await mailer.sendPasswordResetEmail(user.email, token)  
+
+  }
 }
+
+
+
 
 

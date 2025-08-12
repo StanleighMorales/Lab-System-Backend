@@ -15,8 +15,12 @@ import { GetCurrentUserHandler } from '@/handlers/auth/get-current-user.handler'
 import { LogoutHandler } from '@/handlers/auth/logout.handler'
 import { RefreshHandler } from '@/handlers/auth/refresh.handler'
 
+// Import specific routes
+import { forgotPasswordRoute } from './forgot-password.route'
+
 // Import middleware
 import { authMiddleware } from '@/middleware/auth'
+import { ForgotPasswordHandler } from '@/handlers/auth/forgot-password-handler'
 
 // Sub-router that contains actual endpoints
 const authSubRouter = createRouter()
@@ -24,6 +28,8 @@ const authSubRouter = createRouter()
 // public endpoints
 authSubRouter.openapi(loginRoute, LoginHandler)
 authSubRouter.openapi(refreshRoute, RefreshHandler)
+authSubRouter.openapi(forgotPasswordRoute, ForgotPasswordHandler)
+
 
 // protected endpoints
 authSubRouter.use('*', authMiddleware)

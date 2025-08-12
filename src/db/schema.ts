@@ -35,17 +35,33 @@ export const sessions = pgTable('sessions', {
   expiresAt: timestamp('expires_at').notNull(),
 })
 
-// Define relations for users and sessions
+// Define relations for users and sessions and password reset tokens
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
+  passwordResetTokens: many(passwordResetTokens),
 }))
-
+// Define relations for sessions
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, {
     fields: [sessions.user_id],
     references: [users.id],
   }),
 }))
+// Define password reset tokens table
+export const passwordResetTokens = pgTable('password_reset_tokens', {
+  id: varchar({ length: 12 }).primaryKey().$defaultFn(() => nanoid(12)),
+  tokenHash: varchar('token_hash', { length: 255 }).notNull().unique(),
+  userId: varchar('user_id', { length: 12 }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  expiresAt: timestamp('expires_at', { mode: 'date', withTimezone: true }).notNull(),
+});
+// Define relations for password reset tokens
+export const passwordResetTokensRelations = relations(passwordResetTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [passwordResetTokens.userId],
+    references: [users.id],
+  }),
+}))
+
 
 const { createSelectSchema, createInsertSchema } = createSchemaFactory({
   zodInstance: z,

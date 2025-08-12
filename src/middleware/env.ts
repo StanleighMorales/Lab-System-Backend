@@ -5,6 +5,15 @@ const EnvSchema = z.object({
   NODE_ENV: z.string(),
   DATABASE_URL: z.string(),
   JWT_SECRET: z.string(),
+
+  // Email configuration
+  EMAIL_HOST: z.string(),
+  EMAIL_PORT: z.string().optional(),
+  EMAIL_USER: z.string(),
+  EMAIL_PASS: z.string(),
+
+  // Frontend URL for password reset links
+  FRONTEND_URL: z.url(),
 })
 
 export type Environment = z.infer<typeof EnvSchema>
