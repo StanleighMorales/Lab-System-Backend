@@ -1,6 +1,6 @@
 import { z } from '@hono/zod-openapi'
 import { relations } from 'drizzle-orm'
-import { boolean, pgTable, timestamp, varchar } from 'drizzle-orm/pg-core'
+import { boolean, pgTable, timestamp, varchar, text } from 'drizzle-orm/pg-core'
 import { createSchemaFactory } from 'drizzle-zod'
 import { nanoid } from 'nanoid'
 
@@ -496,9 +496,10 @@ export const refreshTokenSelectSchema = createSelectSchema(refreshTokens)
 export const refreshTokenInsertSchema = createInsertSchema(refreshTokens)
   .omit({ id: true, createdAt: true, updatedAt: true })
 
-// Define relations for users and refresh tokens
+// Define relations for users and other tables
 export const usersRelations = relations(users, ({ many }) => ({
   refreshTokens: many(refreshTokens),
+  passwordResetTokens: many(passwordResetTokens),
 }))
 
 export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
@@ -507,3 +508,23 @@ export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
     references: [users.id],
   }),
 }))
+
+export const passwordResetTokens = pgTable('password_reset_tokens', {
+  id: varchar({ length: 12 })
+    .primaryKey()
+    .$default(() => nanoid(12)),
+
+  tokenHash: text('token_hash').notNull().unique(),
+  userId: varchar('user_id', { length: 12 })
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  expiresAt: timestamp('expires_at', { mode: 'date', withTimezone: true }).notNull(),
+})
+
+export const passwordResetTokensRelations = relations(passwordResetTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [passwordResetTokens.userId],
+    references: [users.id],
+  }),
+}));
+
